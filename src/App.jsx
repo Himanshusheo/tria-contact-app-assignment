@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ContactList from './components/ContactList';
+import SearchBar from './components/SearchBar';
 import contactsData from './data/contacts.json';
 
 /**
@@ -7,10 +8,13 @@ import contactsData from './data/contacts.json';
  * 
  * Manages the entire contact list application:
  * - Fetches contacts from JSON file (simulated async with delay)
+ * - Handles search functionality (case-insensitive, real-time filtering)
  * - Displays contacts in a grid layout
  */
 function App() {
   const [contacts, setContacts] = useState([]);
+  const [filteredContacts, setFilteredContacts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   /**
@@ -24,12 +28,39 @@ function App() {
       // Simulate API call with 1.5 second delay
       setTimeout(() => {
         setContacts(contactsData);
+        setFilteredContacts(contactsData);
         setLoading(false);
       }, 1500);
     };
 
     fetchContacts();
   }, []);
+
+  /**
+   * Filter contacts based on search query
+   * Triggered whenever searchQuery or contacts array changes
+   * Case-insensitive search on contact names
+   */
+  useEffect(() => {
+    let filtered;
+    if (searchQuery.trim() === '') {
+      filtered = [...contacts];
+    } else {
+      filtered = contacts.filter((contact) =>
+        contact.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    setFilteredContacts(filtered);
+  }, [searchQuery, contacts]);
+
+  /**
+   * Handle search input changes
+   * @param {string} query - Search query string
+   */
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
+  };
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
@@ -52,10 +83,17 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        {/* Search Bar */}
+        <SearchBar 
+          searchQuery={searchQuery} 
+          onSearchChange={handleSearchChange} 
+        />
+
         {/* Contact List */}
         <ContactList 
-          contacts={contacts}
+          contacts={filteredContacts}
           loading={loading}
+          searchQuery={searchQuery}
         />
       </main>
 
