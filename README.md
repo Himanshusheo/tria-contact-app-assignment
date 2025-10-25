@@ -8,7 +8,7 @@ A modern, responsive contact list application built with React and TailwindCSS. 
 
 ## 🚀 Live Demo
 
-[Deploy Link - Add your Vercel/Netlify URL here after deployment]
+[Deploy Link - (https://tria-contact-app-assignment.vercel.app)]
 
 ## ✨ Features
 
