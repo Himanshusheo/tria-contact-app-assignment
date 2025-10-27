@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ContactList from './components/ContactList';
 import SearchBar from './components/SearchBar';
 import AddContactForm from './components/AddContactForm';
+import EditContactForm from './components/EditContactForm';
 import contactsData from './data/contacts.json';
 
 /**
@@ -19,6 +20,11 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [contactToEdit, setContactToEdit] = useState(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState(null);
+  const [deletedContact, setDeletedContact] = useState(null);
 
   /**
    * Simulate async API fetch of contacts on component mount
@@ -89,6 +95,84 @@ function App() {
   };
 
   /**
+   * Show delete confirmation dialog
+   * @param {number} contactId - ID of contact to delete
+   */
+  const handleDeleteContact = (contactId) => {
+    const contact = contacts.find(c => c.id === contactId);
+    if (contact) {
+      setContactToDelete(contact);
+      setShowConfirmDialog(true);
+    }
+  };
+
+  /**
+   * Confirm delete contact
+   */
+  const handleConfirmDelete = () => {
+    if (contactToDelete) {
+      setDeletedContact(contactToDelete);
+      setContacts((prevContacts) => prevContacts.filter(c => c.id !== contactToDelete.id));
+      showToast(`${contactToDelete.name} deleted — Undo?`, 'delete');
+      setShowConfirmDialog(false);
+      setContactToDelete(null);
+    }
+  };
+
+  /**
+   * Cancel delete contact
+   */
+  const handleCancelDelete = () => {
+    setShowConfirmDialog(false);
+    setContactToDelete(null);
+  };
+
+  /**
+   * Undo the last delete action
+   */
+  const handleUndoDelete = () => {
+    if (deletedContact) {
+      setContacts((prevContacts) => [...prevContacts, deletedContact]);
+      showToast(`${deletedContact.name} restored!`, 'success');
+      setDeletedContact(null);
+    }
+  };
+
+  /**
+   * Show edit contact form
+   * @param {number} contactId - ID of contact to edit
+   */
+  const handleShowEditForm = (contactId) => {
+    const contact = contacts.find(c => c.id === contactId);
+    if (contact) {
+      setContactToEdit(contact);
+      setShowEditForm(true);
+    }
+  };
+
+  /**
+   * Close edit contact form
+   */
+  const handleCloseEditForm = () => {
+    setShowEditForm(false);
+    setContactToEdit(null);
+  };
+
+  /**
+   * Update existing contact
+   * @param {Object} updatedContact - Updated contact object
+   */
+  const handleUpdateContact = (updatedContact) => {
+    setContacts((prevContacts) =>
+      prevContacts.map((contact) =>
+        contact.id === updatedContact.id ? updatedContact : contact
+      )
+    );
+    showToast(`✓ ${updatedContact.name} updated successfully!`, 'success');
+    handleCloseEditForm();
+  };
+
+  /**
    * Display toast notification
    * @param {string} message - Toast message to display
    * @param {string} type - Type of toast (success or delete)
@@ -96,9 +180,13 @@ function App() {
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     
-    // Auto-hide toast after 5 seconds
+    // Auto-hide toast after 5 seconds (longer for delete to allow undo)
     setTimeout(() => {
       setToast({ show: false, message: '', type: 'success' });
+      // Clear deleted contact after toast disappears
+      if (type === 'delete') {
+        setDeletedContact(null);
+      }
     }, 5000);
   };
 
@@ -157,6 +245,8 @@ function App() {
           contacts={filteredContacts}
           loading={loading}
           searchQuery={searchQuery}
+          onDelete={handleDeleteContact}
+          onEdit={handleShowEditForm}
         />
       </main>
 
@@ -174,6 +264,100 @@ function App() {
             : 'bg-green-500 text-white'
         }`}>
           <span>{toast.message}</span>
+          
+          {/* Undo Button (only for delete toasts) */}
+          {toast.type === 'delete' && deletedContact && (
+            <button
+              onClick={handleUndoDelete}
+              className="ml-2 px-3 py-1 bg-white text-orange-600 rounded font-semibold hover:bg-orange-50 transition-colors"
+            >
+              UNDO
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Global Confirmation Dialog */}
+      {showConfirmDialog && contactToDelete && (
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-lg flex items-center justify-center z-[9999]"
+          onClick={handleCancelDelete}
+        >
+          <div 
+            className="bg-gray-900/95 backdrop-blur-xl border border-gray-600/50 rounded-2xl p-8 max-w-lg mx-4 shadow-2xl transform animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={handleCancelDelete}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="flex items-center mb-6">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mr-4">
+                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-white">Delete Contact</h3>
+            </div>
+            
+            <div className="bg-gray-800/50 border border-gray-600/30 rounded-xl p-4 mb-6">
+              <p className="text-gray-300 text-lg leading-relaxed">
+                Are you sure you want to delete <span className="font-semibold text-white">{contactToDelete.name}</span>?
+              </p>
+            </div>
+            
+            <div className="flex gap-4">
+              <button
+                onClick={handleCancelDelete}
+                className="flex-1 px-6 py-3 bg-gray-700 text-gray-200 rounded-xl hover:bg-gray-600 transition-colors font-medium text-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium text-lg"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Contact Form Popup */}
+      {showEditForm && contactToEdit && (
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-lg flex items-center justify-center z-[9999]"
+          onClick={handleCloseEditForm}
+        >
+          <div 
+            className="bg-gray-900/95 backdrop-blur-xl border border-gray-600/50 rounded-2xl p-8 max-w-2xl mx-4 shadow-2xl transform animate-scale-in w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={handleCloseEditForm}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <h2 className="text-2xl font-bold text-white mb-6">Edit Contact</h2>
+            <EditContactForm 
+              contact={contactToEdit}
+              onUpdateContact={handleUpdateContact} 
+              existingContacts={contacts.filter(c => c.id !== contactToEdit.id)}
+              onClose={handleCloseEditForm}
+            />
+          </div>
         </div>
       )}
 

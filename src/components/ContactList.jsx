@@ -9,8 +9,10 @@ import ContactCard from './ContactCard';
  * @param {Array} contacts - Array of contact objects to display
  * @param {boolean} loading - Loading state flag
  * @param {string} searchQuery - Current search query (for empty state message)
+ * @param {function} onDelete - Callback to delete contact
+ * @param {function} onEdit - Callback to edit contact
  */
-const ContactList = ({ contacts, loading, searchQuery = '' }) => {
+const ContactList = ({ contacts, loading, searchQuery = '', onDelete, onEdit }) => {
   // Loading State
   if (loading) {
     return (
@@ -57,6 +59,8 @@ const ContactList = ({ contacts, loading, searchQuery = '' }) => {
         <ContactCard 
           key={contact.id} 
           contact={contact}
+          onDelete={onDelete}
+          onEdit={onEdit}
         />
       ))}
     </div>
