@@ -3,6 +3,7 @@ import ContactList from './components/ContactList';
 import SearchBar from './components/SearchBar';
 import AddContactForm from './components/AddContactForm';
 import EditContactForm from './components/EditContactForm';
+import ContactInsights from './components/ContactInsights';
 import contactsData from './data/contacts.json';
 
 /**
@@ -35,9 +36,14 @@ function App() {
       setLoading(true);
       
       // Simulate API call with 1.5 second delay
+      // Add isFavorite property to each contact (default false)
+      const contactsWithFavorites = contactsData.map(contact => ({
+        ...contact,
+        isFavorite: false
+      }));
       setTimeout(() => {
-        setContacts(contactsData);
-        setFilteredContacts(contactsData);
+        setContacts(contactsWithFavorites);
+        setFilteredContacts(contactsWithFavorites);
         setLoading(false);
       }, 1500);
     };
@@ -46,9 +52,10 @@ function App() {
   }, []);
 
   /**
-   * Filter contacts based on search query
+   * Filter contacts based on search query and sort by favorites
    * Triggered whenever searchQuery or contacts array changes
    * Case-insensitive search on contact names
+   * Favorites are always displayed first
    */
   useEffect(() => {
     let filtered;
@@ -60,7 +67,16 @@ function App() {
       );
     }
     
-    setFilteredContacts(filtered);
+    // Sort: Favorites first, then alphabetically
+    const sorted = filtered.sort((a, b) => {
+      // Favorites come first
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      // Within same favorite status, sort alphabetically
+      return a.name.localeCompare(b.name);
+    });
+    
+    setFilteredContacts(sorted);
   }, [searchQuery, contacts]);
 
   /**
@@ -76,8 +92,29 @@ function App() {
    * @param {Object} newContact - New contact object to add
    */
   const handleAddContact = (newContact) => {
-    setContacts((prevContacts) => [newContact, ...prevContacts]);
+    const contactWithFavorite = { ...newContact, isFavorite: false };
+    setContacts((prevContacts) => [contactWithFavorite, ...prevContacts]);
     showToast(`✓ ${newContact.name} added successfully!`, 'success');
+  };
+
+  /**
+   * Toggle favorite status of a contact
+   * @param {number} contactId - ID of contact to toggle
+   */
+  const handleToggleFavorite = (contactId) => {
+    setContacts((prevContacts) =>
+      prevContacts.map((contact) =>
+        contact.id === contactId
+          ? { ...contact, isFavorite: !contact.isFavorite }
+          : contact
+      )
+    );
+    
+    const contact = contacts.find(c => c.id === contactId);
+    if (contact) {
+      const action = contact.isFavorite ? 'removed from' : 'added to';
+      showToast(`${contact.name} ${action} favorites`, 'success');
+    }
   };
 
   /**
@@ -211,6 +248,14 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        {/* Contact Insights (shown when not loading) */}
+        {!loading && (
+          <ContactInsights 
+            contacts={contacts}
+            favoriteCount={contacts.filter(c => c.isFavorite).length}
+          />
+        )}
+
         {/* Add Contact Button */}
         <div className="mb-8">
           <button
@@ -245,6 +290,7 @@ function App() {
           contacts={filteredContacts}
           loading={loading}
           searchQuery={searchQuery}
+          onToggleFavorite={handleToggleFavorite}
           onDelete={handleDeleteContact}
           onEdit={handleShowEditForm}
         />
