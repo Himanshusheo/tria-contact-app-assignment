@@ -11,9 +11,9 @@ import ContactCard from './ContactCard';
  * @param {string} searchQuery - Current search query (for empty state message)
  * @param {function} onToggleFavorite - Callback to toggle favorite status
  * @param {function} onDelete - Callback to delete contact
- * @param {function} onEdit - Callback to edit contact
+ * @param {function} onShowInfo - Callback to show contact info
  */
-const ContactList = ({ contacts, loading, searchQuery = '', onToggleFavorite, onDelete, onEdit }) => {
+const ContactList = ({ contacts, loading, searchQuery = '', onToggleFavorite, onDelete, onShowInfo }) => {
   // Loading State
   if (loading) {
     return (
@@ -62,7 +62,7 @@ const ContactList = ({ contacts, loading, searchQuery = '', onToggleFavorite, on
           contact={contact}
           onToggleFavorite={onToggleFavorite}
           onDelete={onDelete}
-          onEdit={onEdit}
+          onShowInfo={onShowInfo}
         />
       ))}
     </div>
