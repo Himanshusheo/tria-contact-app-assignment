@@ -1,0 +1,19 @@
+# Netlify configuration for deployment
+
+[build]
+  # Directory with the build output
+  publish = "build"
+  
+  # Build command
+  command = "npm run build"
+
+[[redirects]]
+  # Single Page Application routing
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build.environment]
+  # Node version
+  NODE_VERSION = "18"
+
